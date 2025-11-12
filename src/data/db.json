@@ -1,0 +1,16 @@
+{
+  "pacientes": [],
+  "agendamentos": [
+    {
+      "id": "9c731490-8fac-4cf6-8ddf-1dabf96f665c",
+      "numero": 5,
+      "paciente_id": "Triblastos ",
+      "horario": "priorizado",
+      "motivo": null,
+      "prioridade": "normal",
+      "status": "chamado"
+    }
+  ],
+  "atendimentos": [],
+  "ultimo_numero_agendamento": 5
+}
