@@ -46,27 +46,7 @@ class SchedulerService:
         
         return ag
     
-    def criar_atendimento_sem_agendamento(self, paciente_id: str, recebido_em: Optional[str]=None, descricao: Optional[str]=None) -> Atendimento:
-        # cria paciente automaticamente
-        paciente_id = self._criar_paciente(nome_paciente)
-
-        # gerar número sequencial da ficha
-        numero_ficha = len(self.db["atendimentos"]) + 1
-
-        novo_atendimento = {
-            "id": self._gerar_id(),
-            "paciente_id": paciente_id,
-            "ficha": numero_ficha,
-            "tipo": tipo_atendimento,
-            "status": "aguardando"
-        }
-
-        self.db["atendimentos"].append(novo_atendimento)
-        self.repository.save_all(self.db)
-
-        return numero_ficha
-    
-    def chamar_proximo_priorizado(self) -> Optional[dict]:
+    def chamar_proximo_priorizado(self) -> Optional[dict]:        
         item = self.heap_priorizados.pop()
         
         if not item:

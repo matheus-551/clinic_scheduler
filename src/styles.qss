@@ -132,7 +132,6 @@ QPushButton#btnDanger:hover {
 /* Hover nas abas */
 [class="tabButton"]:hover {
     background: #DADADA;
-    cursor: pointer;
 }
 
 /* Quando estiver selecionada */
@@ -174,7 +173,6 @@ QPushButton#btnDanger:hover {
 /* Hover */
 #advancedTable::item:hover {
     background: #e8f3ff;
-    cursor: pointer;
 }
 
 /* Seleção */
@@ -198,3 +196,85 @@ QPushButton#btnDanger:hover {
 #advancedTable QScrollBar::handle:vertical:hover {
     background: #999999;
 }
+
+/* MENU DE CONTEXTO */
+QMenu#contextMenu {
+    background-color: #ffffff;
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+    padding: 6px;
+}
+
+QMenu#contextMenu::item {
+    padding: 8px 24px;
+    border-radius: 6px;
+    color: #333;
+}
+
+QMenu#contextMenu::item:selected {
+    background-color: #0C2E7B;
+    color: white;
+}
+
+QMenu#contextMenu::separator {
+    height: 1px;
+    background: #e0e0e0;
+    margin: 6px 0;
+}
+
+/* BOX DE DETALHES */
+QMessageBox#detailsBox {
+    background-color: #ffffff;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+QMessageBox#detailsBox QLabel {
+    color: #333;
+}
+
+QMessageBox#detailsBox QPushButton {
+    background-color: #0C2E7B;
+    color: white;
+    padding: 6px 16px;
+    border-radius: 6px;
+}
+
+QMessageBox#detailsBox QPushButton:hover {
+    background-color: #09317f;
+}
+
+/* MODAL DE CANCELAMENTO */
+QMessageBox#cancelBox {
+    background-color: #fff5f5;
+    border-radius: 10px;
+}
+
+QMessageBox#cancelBox QLabel {
+    color: #721c24;
+    font-weight: bold;
+}
+
+QMessageBox#cancelBox QPushButton {
+    padding: 6px 14px;
+    border-radius: 6px;
+}
+
+QMessageBox#cancelBox QPushButton[text="Yes"] {
+    background-color: #dc3545;
+    color: white;
+}
+
+QMessageBox#cancelBox QPushButton[text="Yes"]:hover {
+    background-color: #b02a37;
+}
+
+QMessageBox#cancelBox QPushButton[text="No"] {
+    background-color: #6c757d;
+    color: white;
+}
+
+QMessageBox#cancelBox QPushButton[text="No"]:hover {
+    background-color: #5a6268;
+}
+

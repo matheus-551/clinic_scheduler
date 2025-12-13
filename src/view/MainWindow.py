@@ -1,11 +1,11 @@
 from PyQt6 import QtWidgets
 from PyQt6.QtGui import QIcon, QCursor
 from PyQt6.QtCore import Qt
-import pyttsx3
 
-from view.CreateAtendimentoView import CreateAtendimentoView
+from models.agendamento import Prioridade
 from view.CreateAgendamentoView import CreateAgendamentoView        
 
+from helpers.tts_helper import tts
 from services.scheduler_service import SchedulerService
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -13,10 +13,7 @@ class MainWindow(QtWidgets.QMainWindow):
         super().__init__()
         self.scheduler = scheduler_service
         self.setWindowTitle("Clinic Scheduler")
-        self.setFixedSize(800, 600)
-        self.tts = pyttsx3.init()
-        self.tts.setProperty("rate", 170)  # velocidade da fala
-        self.tts.setProperty("volume", 1.0)  # volume máximo
+        self.setMinimumSize(800, 600)
         self._build_ui()
     
     def _build_ui(self):
@@ -26,7 +23,6 @@ class MainWindow(QtWidgets.QMainWindow):
         header = QtWidgets.QLabel('<h1>Clinic Scheduler</h1>')
         layout.addWidget(header)
 
-        # area de filtro
         filtro_layout = QtWidgets.QHBoxLayout()
         self.input_filtro = QtWidgets.QLineEdit()
         self.input_filtro.setPlaceholderText('Buscar por nome, número ou atendimento...')
@@ -40,8 +36,6 @@ class MainWindow(QtWidgets.QMainWindow):
         filtro_layout.addWidget(btn_buscar)
         layout.addLayout(filtro_layout)
 
-
-        # botoes de navegacao
         botoes_layout = QtWidgets.QHBoxLayout()
         
         btn_novo_agendamento = QtWidgets.QPushButton('Novo Agendamento')
@@ -49,16 +43,9 @@ class MainWindow(QtWidgets.QMainWindow):
         btn_novo_agendamento.setObjectName("btn_primary")
         btn_novo_agendamento.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
-        btn_atendimento_sem = QtWidgets.QPushButton('Atendimento sem Agendamento')
-        btn_atendimento_sem.clicked.connect(self.on_atendimento_sem)
-        btn_atendimento_sem.setObjectName("btn_primary")
-        btn_atendimento_sem.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        
         botoes_layout.addWidget(btn_novo_agendamento)
-        botoes_layout.addWidget(btn_atendimento_sem)
         layout.addLayout(botoes_layout)
         
-        # area de selecao de lista (Priorizados / Normais / Histórico)
         tabs_layout = QtWidgets.QHBoxLayout()
         self.btn_prio = QtWidgets.QPushButton('Priorizados')
         self.btn_normais = QtWidgets.QPushButton('Normais')
@@ -88,8 +75,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # lista
         self.table = QtWidgets.QTableWidget()
         self.table.setObjectName("advancedTable")  # para estilizar via QSS
-        self.table.setColumnCount(4)  # quantidade de colunas
-        self.table.setHorizontalHeaderLabels(["Paciente", "Horário", "Prioridade", "Status"])
+        self.table.setColumnCount(5)
+        self.table.setHorizontalHeaderLabels([
+            "Ficha", "Paciente", "Horário", "Prioridade", "Status"
+        ])
 
         self.table.setSelectionBehavior(QtWidgets.QTableWidget.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QtWidgets.QTableWidget.EditTrigger.NoEditTriggers)
@@ -100,8 +89,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.table.horizontalHeader().setSectionResizeMode(QtWidgets.QHeaderView.ResizeMode.Stretch)
 
         layout.addWidget(self.table)
-
-        # botoes chamar
         chamar_layout = QtWidgets.QHBoxLayout()
         
         btn_chamar_prio = QtWidgets.QPushButton('Chamar próximo priorizado')
@@ -122,12 +109,12 @@ class MainWindow(QtWidgets.QMainWindow):
         central.setLayout(layout)
         self.setCentralWidget(central)
 
-
-        # preencher lista inicial
+        self.table.itemDoubleClicked.connect(self.on_detalhes)
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self.abrir_menu_contexto)
         self.atualizar_lista()
         
     def mudar_lista(self, tipo):
-        # atualiza estado dos botões checkable
         self.btn_prio.setChecked(tipo=='priorizados')
         self.btn_normais.setChecked(tipo=='normais')
         self.btn_historico.setChecked(tipo=='historico')
@@ -149,38 +136,99 @@ class MainWindow(QtWidgets.QMainWindow):
             row = self.table.rowCount()
             self.table.insertRow(row)
 
-            self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(it.get("paciente_id", "(sem paciente)"))))
-            self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(it.get("numero", "-"))))
-            self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(it.get("prioridade", "Normal")).capitalize()))
-            self.table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(it.get("status", ""))))
+            self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(it.get("numero", "-"))))
+            item_ficha = QtWidgets.QTableWidgetItem(str(it.get("numero", "-")))
+            item_ficha.setData(Qt.ItemDataRole.UserRole, it.get("id"))
+
+            self.table.setItem(row, 0, item_ficha)
+            self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(it.get("paciente_id", "(sem paciente)"))))
+            self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(it.get("horario", ""))))
+            self.table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(it.get("prioridade", "Normal")).capitalize()))
+            self.table.setItem(row, 4, QtWidgets.QTableWidgetItem(str(it.get("status", ""))))
                 
     def on_buscar(self):
-        termo = self.input_filtro.text()
-        
-        # implementacao de busca simples: filtra listas em memoria
+        termo = self.input_filtro.text().strip().lower()
+
+        # limpa tabela
+        self.table.setRowCount(0)
+
+        if not termo:
+            self.atualizar_lista()
+            return
+
+        # busca em priorizados + normais
+        todos = self.scheduler.listar_priorizados() + self.scheduler.listar_normais()
+
         resultados = []
-        
-        for a in self.scheduler.listar_priorizados() + self.scheduler.listar_normais():
-            if termo.lower() in (str(a.get('numero','')).lower() + ' ' + str(a.get('paciente_id','')).lower() + ' ' + str(a.get('status','')).lower()):
+        for a in todos:
+            texto = (
+                f"{a.get('numero','')} "
+                f"{a.get('paciente_id','')} "
+                f"{a.get('status','')}"
+            ).lower()
+
+            if termo in texto:
                 resultados.append(a)
-        self.lista_widget.clear()
+
+        # popula tabela com resultados
         for it in resultados:
-            self.lista_widget.addItem(QtWidgets.QListWidgetItem(f"#{it.get('numero','-')} - {it.get('paciente_id')} - {it.get('prioridade')}"))
+            row = self.table.rowCount()
+            self.table.insertRow(row)
+
+            self.table.setItem(row, 0, QtWidgets.QTableWidgetItem(str(it.get("numero", "-"))))
+            item_ficha = QtWidgets.QTableWidgetItem(str(it.get("numero", "-")))
+            item_ficha.setData(Qt.ItemDataRole.UserRole, it.get("id"))
+
+            self.table.setItem(row, 0, item_ficha)
+            self.table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(it.get("paciente_id", "(sem paciente)"))))
+            self.table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(it.get("horario", ""))))
+            self.table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(it.get("prioridade", "normal")).capitalize()))
+            self.table.setItem(row, 4, QtWidgets.QTableWidgetItem(str(it.get("status", ""))))
+    
+    def abrir_menu_contexto(self, pos):
+        item = self.table.itemAt(pos)
+        if not item:
+            return
+
+        row = item.row()
+        agendamento_id = self.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+        ag = self.buscar_agendamento_por_id(agendamento_id)
+
+        menu = QtWidgets.QMenu(self)
+        menu.setObjectName("contextMenu")
+
+        ac_chamar = menu.addAction("📢 Chamar este paciente")
+        ac_priorizar = menu.addAction("⭐ Tornar preferencial")
+        ac_cancelar = menu.addAction("❌ Cancelar agendamento")
+
+        acao = menu.exec(self.table.mapToGlobal(pos))
+
+        if acao == ac_chamar:
+            self.chamar_especifico(ag)
+        elif acao == ac_priorizar:
+            self.priorizar_agendamento(agendamento_id)
+        elif acao == ac_cancelar:
+            self.cancelar_agendamento(agendamento_id)
+
+    def buscar_agendamento_por_id(self, agendamento_id):
+        for a in (
+            self.scheduler.listar_priorizados() +
+            self.scheduler.listar_normais() +
+            self.scheduler.listar_historico_encadeado()
+        ):
+            if a.get("id") == agendamento_id:
+                return a
+        return None
+
             
     def on_novo_agendamento(self):
         self.setCentralWidget(CreateAgendamentoView(self.scheduler, self.back_to_main))
-
-
-    def on_atendimento_sem(self):
-        self.setCentralWidget(CreateAtendimentoView(self.scheduler, self.back_to_main))
-
 
     def on_chamar_prio(self):
         item = self.scheduler.chamar_proximo_priorizado()
         
         if item:
-            QtWidgets.QMessageBox.information(self, 'Chamando', f"Chamando: {item.get('paciente_id')} - Nº {item.get('numero','-')}")
-            self.falar_chamada(item.get('paciente_id'), item.get('numero'))
+            self.falar_chamada(item.get("paciente_id"), item.get("numero"))
             self.atualizar_lista()
         else:
             QtWidgets.QMessageBox.warning(self, 'Vazio', 'Não há pacientes priorizados')
@@ -195,12 +243,66 @@ class MainWindow(QtWidgets.QMainWindow):
             self.atualizar_lista()
         else:
             QtWidgets.QMessageBox.warning(self, 'Vazio', 'Não há pacientes na fila normal')
-            
+           
+    def on_detalhes(self, item):
+        row = item.row()
+        agendamento_id = self.table.item(row, 0).data(Qt.ItemDataRole.UserRole)
+
+        ag = self.buscar_agendamento_por_id(agendamento_id)
+ 
+
+        if not ag:
+            return
+
+        msg = QtWidgets.QMessageBox(self)
+        msg.setObjectName("detailsBox")
+        msg.setWindowTitle("Detalhes do Agendamento")
+        msg.setText(f"""
+            Paciente: {ag.get('paciente_id')}
+            Ficha: {ag.get('numero')}
+            Horário: {ag.get('horario')}
+            Prioridade: {ag.get('prioridade')}
+            Status: {ag.get('status')}
+        """)
+        msg.exec()
+        
     def back_to_main(self):
         self._build_ui()
         
-    def falar_chamada(self, nome_paciente, ficha = None):
+    def falar_chamada(self, nome_paciente, ficha=None):
         texto = f"Paciente {nome_paciente}, ficha número {ficha}. Favor dirigir-se ao atendimento."
-        self.tts.say(texto)
-        self.tts.runAndWait()
+        tts.speak(texto)
         
+    def chamar_especifico(self, ag):
+        if ag.get("status") != "agendado":
+            QtWidgets.QMessageBox.warning(self, "Aviso", "Este agendamento já foi chamado.")
+            return
+        
+        QtWidgets.QMessageBox.information(self, 'Chamando', f"Chamando: {ag['paciente_id']} - Nº {ag['numero']}")
+        self.falar_chamada(ag["paciente_id"], ag["numero"])
+
+        ag["status"] = "chamado"
+        self.scheduler.repo.atualizar_agendamento(ag["id"], ag)
+        self.atualizar_lista()
+        
+    def priorizar_agendamento(self, agendamento_id):
+        if self.scheduler.priorizar_agendamento(agendamento_id):
+            self.atualizar_lista()
+            
+    def cancelar_agendamento(self, agendamento_id):
+        msg = QtWidgets.QMessageBox(self)
+        msg.setObjectName("cancelBox")
+        msg.setWindowTitle("Confirmar cancelamento")
+        msg.setText("Deseja cancelar este agendamento?")
+        msg.setStandardButtons(
+            QtWidgets.QMessageBox.StandardButton.Yes |
+            QtWidgets.QMessageBox.StandardButton.No
+        )
+
+        resp = msg.exec()
+
+        if resp == QtWidgets.QMessageBox.StandardButton.Yes:
+            self.scheduler.cancelar_agendamento(agendamento_id)
+            self.atualizar_lista()
+
+
