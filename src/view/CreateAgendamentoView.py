@@ -9,50 +9,10 @@ from PyQt6.QtCore import QDate, QTime
 
 from models.agendamento import Prioridade
 
-class Toast(QWidget):
-    def __init__(self, message, success=True, parent=None):
-        super().__init__(parent)
-
-        self.setWindowFlags(
-            Qt.WindowType.FramelessWindowHint |
-            Qt.WindowType.Tool |
-            Qt.WindowType.WindowStaysOnTopHint
-        )
-
-        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-
-        color = "#4CAF50" if success else "#FF5252"
-
-        self.setStyleSheet(f"""
-            QWidget {{
-                background-color: {color};
-                color: white;
-                border-radius: 10px;
-                padding: 12px 18px;
-                font-size: 14px;
-            }}
-        """)
-
-        layout = QVBoxLayout(self)
-        label = QLabel(message)
-        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(label)
-
-        self.adjustSize()
-
-        screen = QApplication.primaryScreen().availableGeometry()
-        self.move(
-            screen.width() - self.width() - 20,
-            screen.height() - self.height() - 40
-        )
-
-        self.raise_()
-        self.show()
-        self.repaint()
-
-        QTimer.singleShot(2000, self.close)
-
+class MaskedLineEdit(QLineEdit):
+    def mousePressEvent(self, event):
+        super().mousePressEvent(event)
+        self.setCursorPosition(0)
 
 class CreateAgendamentoView(QWidget):
     def __init__(self, scheduler_service, go_back_callback):
@@ -78,15 +38,26 @@ class CreateAgendamentoView(QWidget):
         
         self.setLayout(layout)
 
-    # -----------------------------------------
     def create_group_box_patient(self):
         self.group_patient = QGroupBox("Dados do Paciente")
         form = QFormLayout()
 
         self.name_input = QLineEdit()
+        self.name_input.setProperty("formInput", True)
+
         self.dataNascimento_input = QLineEdit()
-        self.documento_input = QLineEdit()
-        self.telefone_input = QLineEdit()
+        self.dataNascimento_input.setPlaceholderText("DD/MM/AAAA")
+        self.dataNascimento_input.setProperty("formInput", True)
+
+        self.documento_input = MaskedLineEdit()
+        self.documento_input.setInputMask("000.000.000-00")
+        self.documento_input.setPlaceholderText("CPF")
+        self.documento_input.setProperty("formInput", True)
+
+        self.telefone_input = MaskedLineEdit()
+        self.telefone_input.setInputMask("(00) 00000-0000")
+        self.telefone_input.setPlaceholderText("Telefone")
+        self.telefone_input.setProperty("formInput", True)
 
         form.addRow("Nome:", self.name_input)
         form.addRow("Data de Nascimento:", self.dataNascimento_input)
@@ -94,13 +65,15 @@ class CreateAgendamentoView(QWidget):
         form.addRow("Telefone:", self.telefone_input)
 
         self.group_patient.setLayout(form)
-
+        
     # -----------------------------------------
     def create_group_box_appointment(self):
         self.group_appointment = QGroupBox("Dados do Agendamento")
         form = QFormLayout()
 
         self.prioridade_dropdown = QComboBox()
+        self.prioridade_dropdown.setProperty("formInput", True)
+
         for prioridade in Prioridade:
             self.prioridade_dropdown.addItem(prioridade.name.capitalize(), prioridade)
 
@@ -108,20 +81,38 @@ class CreateAgendamentoView(QWidget):
         self.data_input.setCalendarPopup(True)
         self.data_input.setDate(QDate.currentDate())
         self.data_input.setDisplayFormat("dd/MM/yyyy")
+        self.data_input.setProperty("formInput", True)
 
-        self.hora_input = QTimeEdit()
-        self.hora_input.setTime(QTime.currentTime())
-        self.hora_input.setDisplayFormat("HH:mm")
-        self.motivo_input = QTextEdit()
-        self.motivo_input.setFixedHeight(70)
+        self.hora_dropdown = QComboBox()
+        self.hora_dropdown.setProperty("formInput", True)
+        
+        self.data_input.setFixedWidth(140)
+        self.hora_dropdown.setFixedWidth(90)
 
+        for h in range(0, 24):
+            for m in (0, 30):
+                self.hora_dropdown.addItem(f"{h:02d}:{m:02d}")
+
+        self.motivo_input = QLineEdit()
+        self.motivo_input.setProperty("formInput", True)
+        self.motivo_input.setProperty("asTextarea", True)
+
+        # comportamento visual
+        self.motivo_input.setFixedHeight(90)
+        self.motivo_input.setAlignment(Qt.AlignmentFlag.AlignTop)
         form.addRow("Prioridade:", self.prioridade_dropdown)
 
-        # Data + Hora na mesma linha
         layout_data_hora = QHBoxLayout()
+        layout_data_hora.setSpacing(8)
+        layout_data_hora.setContentsMargins(0, 0, 0, 0)
+        layout_data_hora.setAlignment(Qt.AlignmentFlag.AlignLeft)
+
+        self.data_input.setFixedWidth(140)
+        self.hora_dropdown.setFixedWidth(90)
+
         layout_data_hora.addWidget(self.data_input)
         layout_data_hora.addWidget(QLabel("Hora:"))
-        layout_data_hora.addWidget(self.hora_input)
+        layout_data_hora.addWidget(self.hora_dropdown)
 
         form.addRow("Data:", layout_data_hora)
         form.addRow("Motivo:", self.motivo_input)
@@ -187,37 +178,31 @@ class CreateAgendamentoView(QWidget):
         msg.setText(message)
         msg.exec()
     
-    # -----------------------------------------
     def salvar_agendamento(self):
         try:
             nome = self.name_input.text().strip()
             data = self.data_input.date().toString("yyyy-MM-dd")
-            hora = self.hora_input.time().toString("HH:mm")
+            hora = self.hora_dropdown.currentText()
             motivo = self.motivo_input.toPlainText().strip()
 
             prioridade_enum = self.prioridade_dropdown.currentData()
 
             if nome == "" or data == "" or hora == "":
                 self.show_messagebox("Preencha todos os campos obrigatórios!", type="error")
-                print("Preencha todos os campos obrigatórios!")
                 return
 
-            # monta horário final
             horario = f"{data}T{hora}:00"
-
-            # paciente_id está sendo tratado como nome (conforme JSON atual)
             paciente_id = nome
 
-            # salva usando a assinatura correta
             self.scheduler.criar_agendamento(
                 paciente_id=paciente_id,
                 horario=horario,
-                motivo=motivo if motivo != "" else None,
-                prioridade=prioridade_enum 
+                motivo=motivo if motivo else None,
+                prioridade=prioridade_enum
             )
 
             self.go_back()
 
         except Exception as e:
             print(e)
-            self.show_messagebox("Erro ao salvar agendamento!" + str(e), type="error")
+            self.show_messagebox(f"Erro ao salvar agendamento: {e}", type="error")

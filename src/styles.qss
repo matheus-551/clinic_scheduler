@@ -31,12 +31,53 @@ QLineEdit, QTextEdit {
     font-size: 14px;
 }
 
-/* ✏️ "Classe" — Para inputs do formulário */
-QLineEdit[formInput="true"], QTextEdit[formInput="true"] {
+QLineEdit[formInput="true"] {
     background: white;
     border: 1px solid #bfbfbf;
     border-radius: 8px;
     padding: 7px;
+}
+
+QDateEdit, QTimeEdit {
+    background: white;
+    border: 1px solid #bfbfbf;
+    border-radius: 8px;
+    padding: 6px;
+    font-size: 14px;
+}
+
+QDateEdit QLineEdit {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+QDateEdit::drop-down {
+    border-left: 1px solid #cccccc;
+    width: 24px;
+}
+
+/* ===============================
+   TEXTAREA FAKE (QLineEdit)
+================================ */
+
+QLineEdit[asTextarea="true"] {
+    background: white;
+    border: 1px solid #bfbfbf;
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 14px;
+    min-height: 90px;
+}
+
+/* Foco */
+QLineEdit[asTextarea="true"]:focus {
+    border: 1px solid #226CE0;
+}
+
+/* Cursor mais natural */
+QLineEdit[asTextarea="true"] {
+    qproperty-cursorPosition: 0;
 }
 
 /* Estilo principal do ComboBox */
@@ -73,9 +114,6 @@ QComboBox::drop-down {
     width: 18px;
 }
 
-/* ------------------------------
-   BOTÕES
---------------------------------*/
 QPushButton {
     padding: 10px;
     font-size: 14px;
@@ -98,7 +136,6 @@ QPushButton#btn_primary {
     background: #226CE0;
 }
 
-/* ✅ Botão Salvar */
 QPushButton#btnSuccess {
     background-color: #27ae60;
     color: white;
@@ -118,7 +155,6 @@ QPushButton#btnDanger:hover {
 }
 
 
-/* BOTÕES TIPO ABA (tabs fake) */
 [class="tabButton"] {
     background: #E6E6E6;
     border: 1px solid #CCCCCC;
@@ -129,19 +165,16 @@ QPushButton#btnDanger:hover {
     color: #333;
 }
 
-/* Hover nas abas */
 [class="tabButton"]:hover {
     background: #DADADA;
 }
 
-/* Quando estiver selecionada */
 [class="tabButton"]:checked {
     background: white;
-    color: #0078D4; /* azul tipo Material */
-    border-bottom: 2px solid white; /* remove divide entre lista */
+    color: #0078D4; 
+    border-bottom: 2px solid white; 
 }
 
-/* Remove estilo padrão do botão checkable */
 [class="tabButton"]:checked:hover {
     background: #F7F7F7;
 }
