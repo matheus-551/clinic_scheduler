@@ -130,7 +130,7 @@ class MainWindow(QtWidgets.QMainWindow):
         elif self.lista_atual == 'normais':
             items = self.scheduler.listar_normais()
         else:
-            items = self.scheduler.listar_historico_encadeado()
+            items = self.scheduler.listar_historico ()
 
         for it in items:
             row = self.table.rowCount()
@@ -214,7 +214,7 @@ class MainWindow(QtWidgets.QMainWindow):
         for a in (
             self.scheduler.listar_priorizados() +
             self.scheduler.listar_normais() +
-            self.scheduler.listar_historico_encadeado()
+            self.scheduler.listar_historico()
         ):
             if a.get("id") == agendamento_id:
                 return a
