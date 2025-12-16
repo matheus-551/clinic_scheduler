@@ -183,7 +183,7 @@ class CreateAgendamentoView(QWidget):
             nome = self.name_input.text().strip()
             data = self.data_input.date().toString("yyyy-MM-dd")
             hora = self.hora_dropdown.currentText()
-            motivo = self.motivo_input.toPlainText().strip()
+            motivo = self.motivo_input.text().strip()
 
             prioridade_enum = self.prioridade_dropdown.currentData()
 

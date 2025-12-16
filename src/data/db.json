@@ -17,7 +17,7 @@
       "horario": "2025-12-12T21:05:00",
       "motivo": "Dor forte no abdomem",
       "prioridade": "preferencial",
-      "status": "agendado"
+      "status": "chamado"
     },
     {
       "id": "33333333-cccc-4ccc-8ccc-3ccc33333333",
@@ -26,7 +26,7 @@
       "horario": "2025-12-12T21:05:00",
       "motivo": "Dor forte no abdomem",
       "prioridade": "preferencial",
-      "status": "agendado"
+      "status": "cancelado"
     },
     {
       "id": "44444444-dddd-4ddd-8ddd-4ddd44444444",
@@ -61,8 +61,8 @@
       "paciente_id": "Caio Araujo",
       "horario": "2025-12-12T21:05:00",
       "motivo": "Suspeita AVC",
-      "prioridade": "emergencial",
-      "status": "agendado"
+      "prioridade": "preferencial",
+      "status": "cancelado"
     },
     {
       "id": "88888888-hhhh-4hhh-8hhh-8hhh88888888",
@@ -80,8 +80,35 @@
       "horario": "2025-12-12T21:29:00",
       "motivo": "Ta velho",
       "prioridade": "preferencial",
-      "status": "agendado"
+      "status": "cancelado"
+    },
+    {
+      "id": "7ec96c03-a151-42e1-acee-1b88998e4da2",
+      "numero": 10,
+      "paciente_id": "Lyana Luiza",
+      "horario": "2025-12-15T00:00:00",
+      "motivo": "Consulta de rotina",
+      "prioridade": "normal",
+      "status": "chamado"
+    },
+    {
+      "id": "f264b47c-882d-4b2a-b9ae-28c9ea8c2bdb",
+      "numero": 11,
+      "paciente_id": "Carlos Santana",
+      "horario": "2025-12-15T00:00:00",
+      "motivo": "Consulta de rotina",
+      "prioridade": "preferencial",
+      "status": "chamado"
+    },
+    {
+      "id": "582e0734-7881-4621-afb8-4c4345f330e9",
+      "numero": 12,
+      "paciente_id": "Luiza",
+      "horario": "2025-12-15T00:00:00",
+      "motivo": "Consulta de rotina",
+      "prioridade": "normal",
+      "status": "chamado"
     }
   ],
-  "ultimo_numero_agendamento": 9
+  "ultimo_numero_agendamento": 12
 }
